@@ -14,7 +14,7 @@ raw_data['genres'] = raw_data['genres'].fillna('[]').apply(lb.literal_eval).appl
 raw_data['belongs_to_collection'] = raw_data['belongs_to_collection'].fillna('[]').apply(lb.literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(lb.literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['spoken_languages'] = raw_data['spoken_languages'].fillna('[]').apply(lb.literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
-
+raw_data['year'] = lb.pd.to_datetime(raw_data['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != lb.np.nan else lb.np.nan)
 
 # %% Introview dữ liệu
 print('\n____________ Dataset info ____________')
