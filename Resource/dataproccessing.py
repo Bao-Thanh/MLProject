@@ -115,3 +115,52 @@ from sklearn.model_selection import train_test_split
 train_set, test_set = train_test_split(raw_data, test_size=0.2, random_state=42) 
 
 # %%
+train_set_labels = train_set["wr"].copy()
+train_set = train_set.drop(columns = "wr") 
+test_set_labels = test_set["wr"].copy()
+test_set = test_set.drop(columns = "wr") 
+
+# %%
+class ColumnSelector(BaseEstimator, TransformerMixin):
+    def __init__(self, feature_names):
+        self.feature_names = feature_names
+    def fit(self, dataframe, labels=None):
+        return self
+    def transform(self, dataframe):
+        return dataframe[self.feature_names].values  
+
+# %%
+num_feat_names = ['revenue', 'runtime', 'vote_average', 'vote_count', 'year'] 
+cat_feat_names = ['adult', 'budget', 'genres', 'homepage', 'id', 'imdb_id',
+       'original_language', 'original_title', 'overview', 'popularity',
+       'poster_path', 'production_companies', 'production_countries',
+       'release_date','spoken_languages', 'status',
+       'tagline', 'title', 'video', 'year']
+
+# %%
+cat_pipeline = Pipeline([
+    ('selector', ColumnSelector(cat_feat_names)),
+    ('imputer', SimpleImputer(missing_values=np.nan, strategy="constant", fill_value = "NO INFO", copy=True)), # complete missing values. copy=False: imputation will be done in-place 
+    ('cat_encoder', OneHotEncoder()) # convert categorical data into one-hot vectors
+    ])   
+
+# %%
+num_pipeline = Pipeline([
+    ('selector', ColumnSelector(num_feat_names)),
+    ('imputer', SimpleImputer(missing_values=np.nan, strategy="constant", copy=True)), # copy=False: imputation will be done in-place 
+    ('std_scaler', StandardScaler(with_mean=True, with_std=True, copy=True)) # Scale features to zero mean and unit variance
+    ])  
+
+# %%
+full_pipeline = FeatureUnion(transformer_list=[
+    ("num_pipeline", num_pipeline),
+    ("cat_pipeline", cat_pipeline) ])  
+
+# %%
+processed_train_set_val = full_pipeline.fit_transform(train_set)
+print('\n____________ Processed feature values ____________')
+print(processed_train_set_val[[0, 1, 2, 3, 4],:].toarray())
+print(processed_train_set_val.shape)
+print('We have %d numeric feature + 1 added features + 35 cols of onehotvector for categorical features.' %(len(num_feat_names)))
+joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
+# %%
