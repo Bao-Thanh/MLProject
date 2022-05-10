@@ -13,7 +13,6 @@ from statistics import mean
 from sklearn.model_selection import KFold   
 import joblib 
 from collections import Counter
-import seaborn as sns
 from matplotlib.pyplot import xlim
 from sklearn import naive_bayes
 from pandas.plotting import scatter_matrix  
@@ -23,7 +22,7 @@ from ast import literal_eval
 import function as func
 
 # %% Load dữ liệu
-raw_data = pd.read_csv('Model/movies_metadata.csv')
+raw_data = pd.read_csv('Model/movies_metadata_test.csv')
 
   
 # %%  Convert JSON to array data feature 
@@ -32,7 +31,7 @@ raw_data['genres'] = raw_data['genres'].fillna('[]').apply(literal_eval).apply(l
 raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['spoken_languages'] = raw_data['spoken_languages'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['year'] = pd.to_datetime(raw_data['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
-
+raw_data =raw_data.fillna(0)
 # %% Introview dữ liệu
 print('\n____________ Dataset info ____________')
 print(raw_data.info())  
@@ -81,6 +80,7 @@ if 0:
 # %%
 # Remove unused features
 raw_data.drop(columns = ["belongs_to_collection"], inplace=True) 
+raw_data.drop(columns = ["id"], inplace=True) 
 
 # %% Use IMDB's weighted rating formula
 vote_counts = raw_data[raw_data['vote_count'].notnull()]['vote_count'].astype('int')
@@ -105,12 +105,15 @@ def weighted_rating(x):
 
 # %%
 raw_data['wr'] = qualified.apply(weighted_rating, axis=1)
+raw_data = raw_data.fillna(0)
 
 # %%
 print('\n____________ Dataset info ____________')
 print(raw_data.info())  
 
 # %%
+raw_data = raw_data.explode('genres')
+raw_data = raw_data.explode('spoken_languages')
 from sklearn.model_selection import train_test_split
 train_set, test_set = train_test_split(raw_data, test_size=0.2, random_state=42) 
 
@@ -131,7 +134,7 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
 
 # %%
 num_feat_names = ['revenue', 'runtime', 'vote_average', 'vote_count', 'year'] 
-cat_feat_names = ['adult', 'budget', 'genres', 'homepage', 'id', 'imdb_id',
+cat_feat_names = ['adult', 'budget', 'genres', 'homepage', 'imdb_id',
        'original_language', 'original_title', 'overview', 'popularity',
        'poster_path', 'production_companies', 'production_countries',
        'release_date','spoken_languages', 'status',
@@ -157,10 +160,17 @@ full_pipeline = FeatureUnion(transformer_list=[
     ("cat_pipeline", cat_pipeline) ])  
 
 # %%
-processed_train_set_val = full_pipeline.fit_transform(train_set)
+processed_train_set_val = full_pipeline.fit_transform(train_set.astype(str))
+from numpy import inf
 print('\n____________ Processed feature values ____________')
 print(processed_train_set_val[[0, 1, 2, 3, 4],:].toarray())
 print(processed_train_set_val.shape)
 print('We have %d numeric feature + 1 added features + 35 cols of onehotvector for categorical features.' %(len(num_feat_names)))
-joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
+#joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
+# %%
+from sklearn.linear_model import SGDRegressor
+clf = SGDRegressor(max_iter=1000, tol=1e-3)
+clf.fit(processed_train_set_val, train_set_labels)
+y_pred = clf.predict(processed_train_set_val[0])
+
 # %%
