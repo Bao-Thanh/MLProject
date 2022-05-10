@@ -39,6 +39,7 @@ raw_data['genres'] = raw_data['genres'].fillna('[]').apply(literal_eval).apply(l
 raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['spoken_languages'] = raw_data['spoken_languages'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['year'] = pd.to_datetime(raw_data['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
+# cho may du lieu thieu la 0
 raw_data =raw_data.fillna(0)
 # %% Introview dữ liệu
 print('\n____________ Dataset info ____________')
@@ -120,6 +121,7 @@ print('\n____________ Dataset info ____________')
 print(raw_data.info())  
 
 # %%
+# chuyen du lieu trong genres, spoken_languages ra thanh dong
 raw_data = raw_data.explode('genres')
 raw_data = raw_data.explode('spoken_languages')
 
@@ -128,6 +130,7 @@ raw_data_replace = raw_data
 genres_name =["Action","Fantasy","Crime","Romance","Family","Thriller",
 "Comedy","Science Fiction","Drama","Adventure","History","Horror","Mystery","War",
 "Documentary","Animation","Music"]
+# chuyen du lieu trong genres ra so
 raw_data_replace = raw_data_replace.replace(to_replace ="Action",
                  value ="0")
 raw_data_replace = raw_data_replace.replace(to_replace ="Fantasy",
@@ -219,7 +222,7 @@ clf = SGDRegressor(max_iter=1000, tol=1e-3)
 clf.fit(processed_train_set_val, train_set_labels)
 y_pred = clf.predict(processed_train_set_val[0])
 # %%
-
+# SGD predict
 pipeline = Pipeline([
     ("MinMax Scaling", MinMaxScaler()),
     ("SGD Regression", SGDRegressor())
@@ -233,7 +236,7 @@ Y_pred = pipeline.predict(x_test)
 print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
 print('Score', pipeline.score(x_test, y_test))
 # %%
-
+#sgd predict
 x = train_set[['genres', 'runtime']].values
 y = train_set['popularity'].values
 x_test = test_set[['genres', 'runtime']].values
@@ -243,6 +246,7 @@ Y_pred = pipeline.predict(x_test)
 print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
 print('Score', pipeline.score(x_test, y_test))
 #%%
+# in cac du lieu trong genres
 marks_list = train_set['genres'].tolist()
   
 # show the list
