@@ -115,7 +115,48 @@ print(raw_data.info())
 raw_data = raw_data.explode('genres')
 raw_data = raw_data.explode('spoken_languages')
 from sklearn.model_selection import train_test_split
-train_set, test_set = train_test_split(raw_data, test_size=0.2, random_state=42) 
+# %%
+raw_data_replace = raw_data
+raw_data_replace = raw_data_replace.replace(to_replace ="Action",
+                 value ="0")
+raw_data_replace = raw_data_replace.replace(to_replace ="Fantasy",
+                 value ="1")
+raw_data_replace = raw_data_replace.replace(to_replace ="Crime",
+                 value ="2")
+raw_data_replace = raw_data_replace.replace(to_replace ="Romance",
+                 value ="3")
+raw_data_replace = raw_data_replace.replace(to_replace ="Family",
+                 value ="4")
+raw_data_replace = raw_data_replace.replace(to_replace ="Thriller",
+                 value ="5")
+raw_data_replace = raw_data_replace.replace(to_replace ="Comedy",
+                 value ="6")
+raw_data_replace = raw_data_replace.replace(to_replace ="Science Fiction",
+                 value ="7")
+raw_data_replace = raw_data_replace.replace(to_replace ="Drama",
+                 value ="8")
+raw_data_replace = raw_data_replace.replace(to_replace ="Adventure",
+                 value ="9")
+raw_data_replace = raw_data_replace.replace(to_replace ="History",
+                 value ="10")
+raw_data_replace = raw_data_replace.replace(to_replace ="Science Fiction",
+                 value ="11")
+raw_data_replace = raw_data_replace.replace(to_replace ="Horror",
+                 value ="12")
+raw_data_replace = raw_data_replace.replace(to_replace ="Mystery",
+                 value ="13")
+raw_data_replace = raw_data_replace.replace(to_replace ="War",
+                 value ="14")
+raw_data_replace = raw_data_replace.replace(to_replace ="Documentary",
+                 value ="15")
+raw_data_replace = raw_data_replace.replace(to_replace ="Mystery",
+                 value ="16")
+raw_data_replace = raw_data_replace.replace(to_replace ="Animation",
+                 value ="17")
+raw_data_replace = raw_data_replace.replace(to_replace ="Music",
+                 value ="18")
+
+train_set, test_set = train_test_split(raw_data_replace, test_size=0.2, random_state=42) 
 
 # %%
 train_set_labels = train_set["wr"].copy()
@@ -174,3 +215,34 @@ clf.fit(processed_train_set_val, train_set_labels)
 y_pred = clf.predict(processed_train_set_val[0])
 
 # %%
+
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error
+pipeline = Pipeline([
+    ("MinMax Scaling", MinMaxScaler()),
+    ("SGD Regression", SGDRegressor())
+])
+x = train_set[['popularity', 'runtime']].values
+y = train_set['revenue'].values
+x_test = test_set[['popularity', 'runtime']].values
+y_test = test_set['revenue'].values
+pipeline.fit(x, y)
+Y_pred = pipeline.predict(x_test)
+print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
+print('Score', pipeline.score(x_test, y_test))
+# %%
+
+x = train_set[['genres', 'runtime']].values
+y = train_set['popularity'].values
+x_test = test_set[['genres', 'runtime']].values
+y_test = test_set['popularity'].values
+pipeline.fit(x, y)
+Y_pred = pipeline.predict(x_test)
+print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
+print('Score', pipeline.score(x_test, y_test))
+#%%
+marks_list = train_set['genres'].tolist()
+  
+# show the list
+print(marks_list)
