@@ -22,7 +22,7 @@ from ast import literal_eval
 import function as func
 
 # %% Load dữ liệu
-raw_data = pd.read_csv('Model/movies_metadata_test.csv')
+raw_data = pd.read_csv('Model/movies_metadata.csv')
 
   
 # %%  Convert JSON to array data feature 
