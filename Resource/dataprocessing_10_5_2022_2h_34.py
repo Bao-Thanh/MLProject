@@ -92,8 +92,8 @@ if 0:
 # Remove unused features
 raw_data.drop(columns = ["belongs_to_collection"], inplace=True) 
 raw_data.drop(columns = ["id"], inplace=True) 
-raw_data.drop(columns = ["homepage"], inplace=True) 
-raw_data.drop(columns = ["tagline"], inplace=True) 
+#raw_data.drop(columns = ["homepage"], inplace=True) 
+#raw_data.drop(columns = ["tagline"], inplace=True) 
 
 # %% Use IMDB's weighted rating formula
 vote_counts = raw_data[raw_data['vote_count'].notnull()]['vote_count'].astype('int')
@@ -215,7 +215,7 @@ full_pipeline = FeatureUnion(transformer_list=[
     ("cat_pipeline", cat_pipeline) ])  
 
 # %%
-processed_train_set_val = full_pipeline.fit_transform(train_set)
+processed_train_set_val = full_pipeline.fit_transform(train_set.astype(str))
 print('\n____________ Processed feature values ____________')
 print(processed_train_set_val[[0, 1, 2, 3, 4],:].toarray())
 print(processed_train_set_val.shape)
