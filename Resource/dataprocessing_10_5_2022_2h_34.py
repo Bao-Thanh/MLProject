@@ -37,10 +37,12 @@ raw_data = pd.read_csv('Model/movies_metadata.csv')
 
 raw_data['genres'] = raw_data['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+raw_data['production_countries'] = raw_data['production_countries'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['spoken_languages'] = raw_data['spoken_languages'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['year'] = pd.to_datetime(raw_data['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
 # cho may du lieu thieu la 0
 raw_data =raw_data.fillna(0)
+
 # %% Introview dữ liệu
 print('\n____________ Dataset info ____________')
 print(raw_data.info())  
@@ -90,6 +92,8 @@ if 0:
 # Remove unused features
 raw_data.drop(columns = ["belongs_to_collection"], inplace=True) 
 raw_data.drop(columns = ["id"], inplace=True) 
+raw_data.drop(columns = ["homepage"], inplace=True) 
+raw_data.drop(columns = ["tagline"], inplace=True) 
 
 # %% Use IMDB's weighted rating formula
 vote_counts = raw_data[raw_data['vote_count'].notnull()]['vote_count'].astype('int')
@@ -211,7 +215,7 @@ full_pipeline = FeatureUnion(transformer_list=[
     ("cat_pipeline", cat_pipeline) ])  
 
 # %%
-processed_train_set_val = full_pipeline.fit_transform(train_set.astype(str))
+processed_train_set_val = full_pipeline.fit_transform(train_set)
 print('\n____________ Processed feature values ____________')
 print(processed_train_set_val[[0, 1, 2, 3, 4],:].toarray())
 print(processed_train_set_val.shape)
