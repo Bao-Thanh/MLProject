@@ -28,6 +28,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import  SGDRegressor
 from sklearn.linear_model import LinearRegression
 import sklearn.linear_model
+
 # %% Load dữ liệu
 raw_data = pd.read_csv('Model/movies_metadata.csv')
 
@@ -35,11 +36,13 @@ raw_data = pd.read_csv('Model/movies_metadata.csv')
 # %%  Convert JSON to array data feature 
 
 raw_data['genres'] = raw_data['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
-raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['spoken_languages'] = raw_data['spoken_languages'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+raw_data['production_companies'] = raw_data['production_companies'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+raw_data['production_countries'] = raw_data['production_countries'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
 raw_data['year'] = pd.to_datetime(raw_data['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
 #Can phai chay
 raw_data =raw_data.fillna(0)
+
 # %%
 # Remove unused features
 raw_data.drop(columns = ["belongs_to_collection"], inplace=True) 
@@ -72,6 +75,7 @@ raw_data = raw_data.fillna(0)
 # chuyen du lieu trong genres, spoken_languages ra thanh dong
 raw_data = raw_data.explode('genres')
 raw_data = raw_data.explode('spoken_languages')
+raw_data = raw_data.explode('production_countries')
 
 # %%
 raw_data_replace = raw_data

@@ -32,6 +32,10 @@ import sklearn.linear_model
 # %% Load dữ liệu
 raw_data = pd.read_csv('Model/movies_metadata.csv')
 
+# %%
+for x in raw_data["budget"]:
+    if x.isdigit() == False: 
+        x = 0
   
 # %%  Convert JSON to array data feature 
 
@@ -92,8 +96,9 @@ if 0:
 # Remove unused features
 raw_data.drop(columns = ["belongs_to_collection"], inplace=True) 
 raw_data.drop(columns = ["id"], inplace=True) 
-#raw_data.drop(columns = ["homepage"], inplace=True) 
-#raw_data.drop(columns = ["tagline"], inplace=True) 
+raw_data.drop(columns = ["homepage"], inplace=True) 
+raw_data.drop(columns = ["tagline"], inplace=True) 
+raw_data.drop(columns = ["poster_path"], inplace=True) 
 
 # %% Use IMDB's weighted rating formula
 vote_counts = raw_data[raw_data['vote_count'].notnull()]['vote_count'].astype('int')
@@ -188,12 +193,10 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         return dataframe[self.feature_names].values  
 
 # %%
-num_feat_names = ['revenue', 'runtime', 'vote_average', 'vote_count', 'year'] 
-cat_feat_names = ['adult', 'budget', 'genres', 'homepage', 'imdb_id',
-       'original_language', 'original_title', 'overview', 'popularity',
-       'poster_path', 'production_companies', 'production_countries',
-       'release_date','spoken_languages', 'status',
-       'tagline', 'title', 'video', 'year']
+num_feat_names = ['revenue','budget', 'runtime', 'vote_average', 'vote_count'] 
+cat_feat_names = ['adult', 'genres', 'imdb_id',
+       'original_language', 'original_title', 'overview', 'popularity','production_companies', 'production_countries',
+       'release_date','spoken_languages', 'status', 'title', 'video', 'year']
 
 # %%
 cat_pipeline = Pipeline([
@@ -220,11 +223,13 @@ print('\n____________ Processed feature values ____________')
 print(processed_train_set_val[[0, 1, 2, 3, 4],:].toarray())
 print(processed_train_set_val.shape)
 print('We have %d numeric feature + 1 added features + 35 cols of onehotvector for categorical features.' %(len(num_feat_names)))
+
 #joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
 # %%
 clf = SGDRegressor(max_iter=1000, tol=1e-3)
 clf.fit(processed_train_set_val, train_set_labels)
 y_pred = clf.predict(processed_train_set_val[0])
+
 # %%
 # SGD predict
 pipeline = Pipeline([
@@ -239,6 +244,7 @@ pipeline.fit(x, y)
 Y_pred = pipeline.predict(x_test)
 print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
 print('Score', pipeline.score(x_test, y_test))
+
 # %%
 #sgd predict
 x = train_set[['genres', 'runtime']].values
@@ -249,12 +255,14 @@ pipeline.fit(x, y)
 Y_pred = pipeline.predict(x_test)
 print('Mean Absolute Error: ', mean_absolute_error(Y_pred, y_test))
 print('Score', pipeline.score(x_test, y_test))
+
 #%%
 # in cac du lieu trong genres
 marks_list = train_set['genres'].tolist()
   
 # show the list
 print(marks_list)
+
 #%% Learning curve
 x = train_set[['genres','runtime','popularity']].values
 y = train_set['popularity'].values
