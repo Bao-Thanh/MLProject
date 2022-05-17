@@ -36,40 +36,10 @@ import function as func
 '''Prepare data'''
 
 # %% Load dữ liệu
-# Link data: https://www.kaggle.com/code/rounakbanik/movie-recommender-systems/data?select=movies_metadata.csv
+# Link data: https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata?select=tmdb_5000_movies.csv
 df = pd.read_csv('Dataset/movies_metadata_regression.csv')
 
 # %% Introview dữ liệu
-print('\n____________ Dataset info ____________')
-print(df.info())  
-
-# %% Convert JSON to array feature
-
-df['genres'] = df['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
-
-# %% Convert JSON to one hot dataframe and temp
-genre_list=df['genres'].tolist()
-temp = []
-for genre in genre_list:
-    temp = temp + genre
-Genres = pd.DataFrame(temp)
-unique_genres = Genres[0].unique()
-columns = unique_genres   
-
-# %%
-index = range(len(df))
-df_Genre_list= pd.DataFrame(index = index, columns = columns)
-df_Genre_list=df_Genre_list.fillna(0)
-for row in range(len(df_Genre_list)):
-    for col in genre_list[row]:
-        df_Genre_list.loc[row,col]=1
-
-# %%
-df = pd.concat([df,df_Genre_list],axis=1)
-
-# %% Convert timeseries feature
-df['year'] = pd.to_datetime(df['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
-
 # %% Interview dữ liệu
 print('\n____________ Dataset info ____________')
 print(df.info())  
@@ -90,7 +60,35 @@ print('\n____________ Statistics of revenue feature ____________')
 print(df['revenue'].describe())
 
 print('\n____________ Statistics of budget feature ____________')
-print(df['budget'].describe())  
+print(df['budget'].describe()) 
+
+# %% Convert JSON to array feature
+
+df['genres'] = df['genres'].fillna('[]').apply(literal_eval).apply(lambda x: [i['name'] for i in x] if isinstance(x, list) else [])
+
+# %% Convert JSON to one hot dataframe and temp
+genre_list=df['genres'].tolist()
+temp = []
+for genre in genre_list:
+    temp = temp + genre
+Genres = pd.DataFrame(df['genres'].tolist())
+unique_genres = Genres[0].unique()
+columns = unique_genres   
+
+# %%
+index = range(len(df))
+df_Genre_list= pd.DataFrame(index = index, columns = columns)
+df_Genre_list=df_Genre_list.fillna(0)
+for row in range(len(df_Genre_list)):
+    for col in genre_list[row]:
+        df_Genre_list.loc[row,col]=1
+
+# %%
+df = pd.concat([df,df_Genre_list],axis=1)
+
+# %% Convert timeseries feature
+df['year'] = pd.to_datetime(df['release_date'], errors='coerce').apply(lambda x: str(x).split('-')[0] if x != np.nan else np.nan)
+ 
 
 # %% Remove unused features
 df.drop(columns = ["genres"], inplace=True) 
@@ -106,23 +104,24 @@ df.drop(columns = ["production_countries"], inplace=True)
 df.drop(columns = ["spoken_languages"], inplace=True) 
 df.drop(columns = ["keywords"], inplace=True) 
 
-
 # %% Data visualization: trực quan hóa dữ liệu
 if 0:
-    df.plot(kind="scatter", y="runtime", x="revenue", alpha=0.2)
-    plt.savefig('figs/scatter_revenue_vs_runtime_feat.png', format='png', dpi=300)
-    plt.show()
-
-if 0:
-    g = sns.countplot(data=df, x='genres')
-    g.set_xticklabels(g.get_xticklabels(),rotation=90)
+    g = sns.histplot(df['revenue'], bins=25)
     fig = g.get_figure()
-    fig.savefig('figs/frequency_genres.png')
+    fig.savefig('figs/histplot_revenue.png')
 
 if 0:
-    scatter_matrix(df)
-    plt.savefig('figs/scatter_matrix.png', format='png', dpi=300)
+    g = sns.kdeplot(df['revenue'])
+    fig = g.get_figure()
+    fig.savefig('figs/kdeplot_revenue.png')
+
+if 0:
+    from pandas.plotting import scatter_matrix   
+    features_to_plot = ['budget','popularity', 'runtime', 'vote_average', 'vote_count']
+    scatter_matrix(df[features_to_plot], figsize=(12, 8)) # Note: histograms on the main diagonal
+    plt.savefig('figs/scatter_mat_all_feat.png', format='png', dpi=300)
     plt.show()
+
 
 # %% Tách dataset ra tập train và test 
 from sklearn.model_selection import train_test_split
@@ -194,13 +193,6 @@ print('\n____________ Processed dataframe ____________')
 print(processed_train_set.info())
 print(processed_train_set.head())
 
-# # %% 
-# processed_train_set.to_csv('Dataset/result.csv')
-
-
-# # %%
-# df_new = pd.read_csv('Dataset/result.csv')
-
 # %%
 def r2score_and_rmse(model, train_data, labels): 
     r2score = model.score(train_data, labels)
@@ -236,15 +228,15 @@ def print_search_result(grid_search, model_name = ""):
 # %% Train model by Lasso (fine tunning)
 from sklearn.model_selection import GridSearchCV
 from sklearn.ensemble import RandomForestRegressor
-
+  
 cv = KFold(n_splits=5,shuffle=True,random_state=42) 
 
 model = RandomForestRegressor()
-param_dist = {"max_depth": [10,35, None],
-              "max_features": ["auto", "sqrt", "log2"],
-              "min_samples_split": [2, 5, 10],
-              "bootstrap": [True, False],
-              "n_estimators": [100, 150]}
+param_dist = {  "n_estimators"      : [1500, 3000],
+                "max_features"      : ["auto", "sqrt", "log2"],
+                "min_samples_split" : [2,3,4],
+                "bootstrap"         : [True, False],
+                'max_depth'         : [15,35,70]}
 
 grid_search = GridSearchCV(model, param_dist, cv=cv, scoring='neg_mean_squared_error', return_train_score=True, 
         refit=True)
