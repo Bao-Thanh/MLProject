@@ -233,8 +233,8 @@ cv = KFold(n_splits=5,shuffle=True,random_state=42)
 
 model = RandomForestRegressor()
 param_dist = {  "n_estimators"      : [1500, 3000],
-                "max_features"      : ["auto", "sqrt", "log2"],
-                "min_samples_split" : [2,3,4],
+                "max_features"      : ["sqrt", "log2"],
+                "min_samples_split" : [4,5,6],
                 "bootstrap"         : [True, False],
                 'max_depth'         : [15,35,70]}
 
@@ -242,7 +242,7 @@ grid_search = GridSearchCV(model, param_dist, cv=cv, scoring='neg_mean_squared_e
         refit=True)
 grid_search.fit(processed_train_set_val, train_set_labels)
 joblib.dump(grid_search,'saved_objects/RandomForestRegressor_grid_search.pkl')
-print_search_result(grid_search, model_name = "RandomForestRegressor") 
+print_search_result(grid_search, model_name = "RandomForestRegressor")
 
  
 # %%
