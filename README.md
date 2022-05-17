@@ -2,7 +2,7 @@
 > Movie Recommender System
 <hr>
 
-![Alt text](Resource/MachineLearning.jpg?raw=true "Machine Learning")
+![Alt text](Resource/MachineLearning.png?raw=true "Machine Learning")
 
 <hr>
 
