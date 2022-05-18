@@ -266,6 +266,23 @@ if type(best_model).__name__ == "RandomForestRegressor":
     print('\nFeatures and importance score: ')
     print(*sorted(zip( feature_names, feature_importances.round(decimals=4)), key = lambda row: row[1], reverse=True),sep='\n')
 
+
+# %% Try to fit train set
+from sklearn.ensemble import RandomForestRegressor
+model = search.best_estimator_
+model.fit(processed_train_set_val, train_set_labels)
+# Compute R2 score and root mean squared error
+print('\n____________ RandomForestRegressor ____________')
+r2score, rmse = r2score_and_rmse(model, processed_train_set_val, train_set_labels)
+print('\nR2 score (on training data, best=1):', r2score)
+print("Root Mean Square Error: ", rmse.round(decimals=1))
+store_model(model)      
+# Predict labels for some training instances
+#print("Input data: \n", train_set.iloc[0:9])
+print("\nPredictions: ", model.predict(processed_train_set_val[0:9]).round(decimals=1))
+print("Labels:      ", list(train_set_labels[0:9]))
+
+
 # %%
 full_pipeline = joblib.load(r'models/full_pipeline.pkl')
 processed_test_set = full_pipeline.transform(test_set)  
