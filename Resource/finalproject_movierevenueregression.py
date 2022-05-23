@@ -4,12 +4,13 @@ This source code is uploaded on Github at the following link: https://github.com
 '''
 #%% 
 # Import các thư viện
+from cmath import nan
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDRegressor
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
@@ -18,6 +19,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder      
 from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score   
 import joblib 
+from sklearn.preprocessing import PolynomialFeatures
 from collections import Counter
 import seaborn as sns
 from matplotlib.pyplot import xlim
@@ -25,10 +27,21 @@ from sklearn import naive_bayes
 from pandas.plotting import scatter_matrix  
 import os
 from ast import literal_eval
-from sklearn.svm import SVC, SVR
-from sklearn.preprocessing import LabelEncoder
-
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge, Lasso, ElasticNet
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.tree import DecisionTreeRegressor
+from xgboost import XGBRegressor 
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.svm import SVR
+from sklearn.ensemble import BaggingRegressor
+from sklearn.ensemble import AdaBoostRegressor
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_log_error
+from sklearn.ensemble import BaggingRegressor
+from sklearn.ensemble import VotingRegressor
+from sklearn.ensemble import ExtraTreesRegressor
+from sklearn.ensemble import StackingRegressor
 # Import các hàm
 import function as func
 
@@ -103,6 +116,8 @@ df.drop(columns = ["production_companies"], inplace=True)
 df.drop(columns = ["production_countries"], inplace=True) 
 df.drop(columns = ["spoken_languages"], inplace=True) 
 df.drop(columns = ["keywords"], inplace=True) 
+df.drop(columns = ["original_language"], inplace=True) 
+df.drop(columns = ["status"], inplace=True)
 
 # %% Data visualization: trực quan hóa dữ liệu
 if 0:
@@ -122,6 +137,15 @@ if 0:
     plt.savefig('figs/scatter_mat_all_feat.png', format='png', dpi=300)
     plt.show()
 
+if 0:
+    g = sns.histplot(df['status'], bins=25)
+    fig = g.get_figure()
+    fig.savefig('figs/histplot_status.png')
+
+if 0:
+    g = sns.histplot(df['original_language'], bins=25)
+    fig = g.get_figure()
+    fig.savefig('figs/histplot_original_language.png')
 
 # %% Tách dataset ra tập train và test 
 from sklearn.model_selection import train_test_split
@@ -147,15 +171,15 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
     def transform(self, dataframe):
         return dataframe[self.feature_names].values
 
-num_feat_names = ['budget','popularity', 'runtime', 'vote_average', 'vote_count']
-cat_feat_names = ["year", "status", "original_language"]
+num_feat_names = ["year",'budget','popularity', 'runtime', 'vote_average', 'vote_count']
+# cat_feat_names = []
 onehot_feat_names = columns
 
-cat_pipeline = Pipeline([
-    ('selector', ColumnSelector(cat_feat_names)),
-    ('imputer', SimpleImputer(missing_values=np.nan, strategy="constant", fill_value = "NO INFO", copy=True)), # complete missing values. copy=False: imputation will be done in-place 
-    ('cat_encoder', OneHotEncoder(handle_unknown = "ignore")) 
-    ]) 
+# cat_pipeline = Pipeline([
+#     ('selector', ColumnSelector(cat_feat_names)),
+#     ('imputer', SimpleImputer(missing_values=np.nan, strategy="constant", fill_value = "NO INFO", copy=True)), # complete missing values. copy=False: imputation will be done in-place 
+#     ('cat_encoder', OneHotEncoder(handle_unknown = "ignore")) 
+#     ]) 
 
 num_pipeline = Pipeline([
     ('selector', ColumnSelector(num_feat_names)),
@@ -170,7 +194,7 @@ onehot_pipeline = Pipeline([
 
 full_pipeline = FeatureUnion(transformer_list=[
     ("num_pipeline", num_pipeline),
-    ("cat_pipeline", cat_pipeline),
+    # ("cat_pipeline", cat_pipeline),
     ("onehot_pipeline", onehot_pipeline)])
 
 # %%
@@ -178,17 +202,17 @@ processed_train_set_val = full_pipeline.fit_transform(train_set.astype(str))
 print('\n____________ Processed feature values ____________')
 print(processed_train_set_val[[0, 1, 2, 3, 4],:])
 print(processed_train_set_val.shape)
-print('We have {0} numeric feature + {1} categorical features + {2} one hot features.'.format(len(num_feat_names), len(cat_feat_names), len(onehot_feat_names)))
+print('We have {0} numeric feature + {1} one hot features.'.format(len(num_feat_names), len(onehot_feat_names)))
 joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
 
 # %%
-onehot_cols = []
-for val_list in full_pipeline.transformer_list[1][1].named_steps['cat_encoder'].categories_: 
-    onehot_cols = onehot_cols + val_list.tolist()
-columns_header = train_set.columns.tolist() + onehot_cols
-for name in cat_feat_names:
-    columns_header.remove(name)
-processed_train_set = pd.DataFrame(processed_train_set_val.toarray(), columns = columns_header)
+# onehot_cols = []
+# for val_list in full_pipeline.transformer_list[1][1].named_steps['cat_encoder'].categories_: 
+#     onehot_cols = onehot_cols + val_list.tolist()
+columns_header = train_set.columns.tolist()
+# for name in cat_feat_names:
+#     columns_header.remove(name)
+processed_train_set = pd.DataFrame(processed_train_set_val, columns = columns_header)
 print('\n____________ Processed dataframe ____________')
 print(processed_train_set.info())
 print(processed_train_set.head())
@@ -225,77 +249,205 @@ def print_search_result(grid_search, model_name = ""):
     for (mean_score, params) in zip(cv_results["mean_test_score"], cv_results["params"]):
         print('rmse =', np.sqrt(-mean_score).round(decimals=1), params) 
 
-# %% Train model by Lasso (fine tunning)
-from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestRegressor
-  
-cv = KFold(n_splits=5,shuffle=True,random_state=42) 
-
-model = RandomForestRegressor()
-param_dist = {  "n_estimators"      : [1500, 3000],
-                "max_features"      : ["sqrt", "log2"],
-                "min_samples_split" : [4,5,6],
-                "bootstrap"         : [True, False],
-                'max_depth'         : [15,35,70]}
-
-grid_search = GridSearchCV(model, param_dist, cv=cv, scoring='neg_mean_squared_error', return_train_score=True, 
-        refit=True)
-grid_search.fit(processed_train_set_val, train_set_labels)
-joblib.dump(grid_search,'saved_objects/RandomForestRegressor_grid_search.pkl')
-print_search_result(grid_search, model_name = "RandomForestRegressor")
-
- 
-# %%
-search = joblib.load('saved_objects/RandomForestRegressor_grid_search.pkl')
-best_model = search.best_estimator_
-
-print('\n____________ ANALYZE AND TEST YOUR SOLUTION ____________')
-print('SOLUTION: ' , best_model)
-store_model(best_model, model_name="SOLUTION")
-
-# %%
-if type(best_model).__name__ == "RandomForestRegressor":
-    # Print features and importance score  (ONLY on rand forest)
-    feature_importances = best_model.feature_importances_
-    onehot_cols = []
-    for val_list in full_pipeline.transformer_list[1][1].named_steps['cat_encoder'].categories_: 
-        onehot_cols = onehot_cols + val_list.tolist()
-    feature_names = train_set.columns.tolist() + onehot_cols
-    for name in cat_feat_names:
-        feature_names.remove(name)
-    print('\nFeatures and importance score: ')
-    print(*sorted(zip( feature_names, feature_importances.round(decimals=4)), key = lambda row: row[1], reverse=True),sep='\n')
-
-
-# %% Try to fit train set
-from sklearn.ensemble import RandomForestRegressor
-model = search.best_estimator_
-model.fit(processed_train_set_val, train_set_labels)
-# Compute R2 score and root mean squared error
-print('\n____________ RandomForestRegressor ____________')
-r2score, rmse = r2score_and_rmse(model, processed_train_set_val, train_set_labels)
-print('\nR2 score (on training data, best=1):', r2score)
-print("Root Mean Square Error: ", rmse.round(decimals=1))
-store_model(model)      
-# Predict labels for some training instances
-#print("Input data: \n", train_set.iloc[0:9])
-print("\nPredictions: ", model.predict(processed_train_set_val[0:9]).round(decimals=1))
-print("Labels:      ", list(train_set_labels[0:9]))
-
-
 # %%
 full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-processed_test_set = full_pipeline.transform(test_set)  
+processed_test_set = full_pipeline.transform(test_set) 
 
 # %%
-r2score, rmse = r2score_and_rmse(best_model, processed_test_set, test_set_labels)
+scores = []
+names = ['Linear Regression', 'Polynomial','Ridge Regresion','Lasso Regresion','ElasticNet',
+'Random Forest Regressor','AdaBoost Regressor', 'Bagging Regressor','SVR',
+'KNeighbors Regressor','XGBoost Regressor','Gradient Boosting Regressor',
+'ExtraTreesRegressor','SGDRegressor','DecisionTreeRegressor']
+
+
+'''Linear Regression'''
+# %% 
+
+model = LinearRegression()
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+
+'''Polynomial'''
+# %% 
+model = Pipeline([ ('poly_feat_adder', PolynomialFeatures(degree=5)),('lin_reg', LinearRegression())])
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Ridge Regresion'''
+# %%
+model = Ridge(solver = 'sag', alpha = 5, random_state = 42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Lasso Regresion'''
+# %%
+model =  Lasso(alpha = 0.0005 ,random_state = 42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''ElasticNet'''
+# %%
+model = ElasticNet(alpha=0.01, l1_ratio=0.7, random_state=42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+''''ElasticNet'''
+# %% 
+model = ElasticNet(alpha=0.01, l1_ratio=0.7, random_state=42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Random Forest Regressor'''
+# %% 
+model = RandomForestRegressor(n_estimators = 3000, max_features = "sqrt", min_samples_split = 5, bootstrap = True, max_depth= 35, random_state=42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''AdaBoost Regressor'''
+# %%
+model =  AdaBoostRegressor(n_estimators = 300, learning_rate = 0.06, loss ='exponential', random_state = 42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Bagging Regressor'''
+# %%
+model =  BaggingRegressor(n_estimators = 1000, max_features = 0.6, random_state = 42)
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''SVR'''
+# %%
+model = SVR(kernel = 'linear',degree = 30, gamma = 'scale')
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''KNeighbors Regressor'''
+# %%
+model = KNeighborsRegressor(n_neighbors=10, weights='distance')
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''XGBoost Regressor'''
+# %%
+model = XGBRegressor(max_depth= 15, learning_rate = 0.1,
+              booster= 'gblinear', objective='reg:squarederror', random_state=42)
+
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Gradient Boosting Regressorr'''
+# %%
+model = GradientBoostingRegressor(loss='huber',max_depth=4,max_features='log2',n_estimators=200,
+                                                       random_state=42)
+
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''ExtraTreesRegressor'''
+# %%
+model = ExtraTreesRegressor(max_leaf_nodes=16, n_estimators=200, max_samples=.7, 
+                                 bootstrap=True, random_state=42)
+
+
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''SGDRegressor'''
+# %%
+model = SGDRegressor()
+
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+'''Decision Tree'''
+# %%
+model = DecisionTreeRegressor(min_samples_split=5, min_samples_leaf= 12,max_depth=10,max_features="sqrt" ,random_state=42)
+
+model.fit(processed_train_set_val, train_set_labels)
+score = model.score(processed_test_set, test_set_labels)
+scores.append(score)
+
+
+# %% Convert 2 list to dataframe
+data = {'Model': names, 'Score': scores}
+df = pd.DataFrame(data)
+df.sort_values('Score', inplace=True, ascending=False) # sort 'score' feature to find top 3 model
+df
+
+# %% Implement Ensemble learning with top 3 model
+
+models = list()
+models.append(('forest',  RandomForestRegressor(n_estimators = 3000, max_features = "sqrt", min_samples_split = 5, bootstrap = True, max_depth= 35, random_state=42)))
+models.append(('knn',  KNeighborsRegressor(n_neighbors=10, weights='distance')))
+models.append(('bag',  BaggingRegressor(n_estimators = 1000, max_features = 0.6, random_state = 42)))
+
+
+# Use voting method 
+voting = VotingRegressor(estimators=models)
+voting.fit(processed_train_set_val, train_set_labels)
+print('\n____________ VotingRegressor ____________')
+r2score, rmse = r2score_and_rmse(voting, processed_train_set_val, train_set_labels)
+print('\nR2 score (on training data, best=1):', r2score)
+print("Root Mean Square Error: ", rmse.round(decimals=1))
+store_model(voting)    
+
+# Use stacking method 
+stacking = StackingRegressor(estimators=models, final_estimator=ExtraTreesRegressor(max_leaf_nodes=16, n_estimators=200, max_samples=.7, 
+                                 bootstrap=True, random_state=42))
+stacking.fit(processed_train_set_val, train_set_labels)
+store_model(stacking)
+print('\n____________ StackingRegressor ____________')
+r2score, rmse = r2score_and_rmse(stacking, processed_train_set_val, train_set_labels)
+print('\nR2 score (on training data, best=1):', r2score)
+print("Root Mean Square Error: ", rmse.round(decimals=1))
+store_model(stacking)  
+
+# Compute R2 score and root mean squared error
+  
+# Predict labels for some training instances
+#print("Input data: \n", train_set.iloc[0:9])
+# print("\nPredictions: ", model.predict(processed_train_set_val[0:9]).round(decimals=1))
+# print("Labels:      ", list(train_set_labels[0:9])) 
+
+# %%
+voting_best_model = joblib.load('models/VotingRegressor_model.pkl')
+stacking_best_model = joblib.load('models/StackingRegressor_model.pkl')
+
+store_model(voting_best_model, model_name="VOTING")
+store_model(stacking_best_model, model_name="STACKING")
+
+# %% Find best method for test set
+print('\n____________ VotingRegressor ____________')
+r2score, rmse = r2score_and_rmse(voting_best_model, processed_test_set, test_set_labels)
+print('\nPerformance on test data:')
+print('R2 score (on test data, best=1):', r2score)
+print("Root Mean Square Error: ", rmse.round(decimals=1))
+
+print('\n____________ StackingRegressor ____________')
+r2score, rmse = r2score_and_rmse(stacking_best_model, processed_test_set, test_set_labels)
 print('\nPerformance on test data:')
 print('R2 score (on test data, best=1):', r2score)
 print("Root Mean Square Error: ", rmse.round(decimals=1))
 
 # %%
 # print("\nTest data: \n", test_set.iloc[0:9])
-print("\nPredictions: ", best_model.predict(processed_test_set[0:9]).round(decimals=1))
+print("\nPredictions: ", stacking_best_model.predict(processed_test_set[0:9]).round(decimals=1))
 print("Labels:      ", list(test_set_labels[0:9]),'\n')
 
-# %%
