@@ -255,7 +255,7 @@ processed_test_set = full_pipeline.transform(test_set)
 
 # %%
 scores = []
-names = ['Linear Regression', 'Polynomial','Ridge Regresion','Lasso Regresion','ElasticNet',
+names = ['Linear Regression','Ridge Regresion','Lasso Regresion','ElasticNet',
 'Random Forest Regressor','AdaBoost Regressor', 'Bagging Regressor','SVR',
 'KNeighbors Regressor','XGBoost Regressor','Gradient Boosting Regressor',
 'ExtraTreesRegressor','SGDRegressor','DecisionTreeRegressor']
@@ -270,12 +270,12 @@ score = model.score(processed_test_set, test_set_labels)
 scores.append(score)
 
 
-'''Polynomial'''
-# %% 
-model = Pipeline([ ('poly_feat_adder', PolynomialFeatures(degree=5)),('lin_reg', LinearRegression())])
-model.fit(processed_train_set_val, train_set_labels)
-score = model.score(processed_test_set, test_set_labels)
-scores.append(score)
+# '''Polynomial'''
+# # %% 
+# model = Pipeline([ ('poly_feat_adder', PolynomialFeatures(degree=5)), ('lin_reg', LinearRegression())])
+# model.fit(processed_train_set_val, train_set_labels)
+# score = model.score(processed_test_set, test_set_labels)
+# scores.append(score)
 
 '''Ridge Regresion'''
 # %%
@@ -298,12 +298,6 @@ model.fit(processed_train_set_val, train_set_labels)
 score = model.score(processed_test_set, test_set_labels)
 scores.append(score)
 
-''''ElasticNet'''
-# %% 
-model = ElasticNet(alpha=0.01, l1_ratio=0.7, random_state=42)
-model.fit(processed_train_set_val, train_set_labels)
-score = model.score(processed_test_set, test_set_labels)
-scores.append(score)
 
 '''Random Forest Regressor'''
 # %% 
@@ -385,7 +379,7 @@ score = model.score(processed_test_set, test_set_labels)
 scores.append(score)
 
 
-# %% Convert 2 list to dataframe
+# %% Convert 2 lists to dataframe
 data = {'Model': names, 'Score': scores}
 df = pd.DataFrame(data)
 df.sort_values('Score', inplace=True, ascending=False) # sort 'score' feature to find top 3 model
