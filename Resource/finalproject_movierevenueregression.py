@@ -403,8 +403,7 @@ print("Root Mean Square Error: ", rmse.round(decimals=1))
 store_model(voting)    
 
 # Use stacking method 
-stacking = StackingRegressor(estimators=models, final_estimator=ExtraTreesRegressor(max_leaf_nodes=16, n_estimators=200, max_samples=.7, 
-                                 bootstrap=True, random_state=42))
+stacking = StackingRegressor(estimators=models, final_estimator=RandomForestRegressor(n_estimators = 3000, max_features = "sqrt", min_samples_split = 5, bootstrap = True, max_depth= 35, random_state=42))
 stacking.fit(processed_train_set_val, train_set_labels)
 store_model(stacking)
 print('\n____________ StackingRegressor ____________')

@@ -1,6 +1,5 @@
 '''
 This source code is uploaded on Github at the following link: https://github.com/Bao-Thanh/MLProject 
-
 '''
 #%% 
 # Import các thư viện
@@ -65,8 +64,6 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
     def transform(self, dataframe):
         return dataframe[self.feature_names].values
 
-#print("\nPredictions: ", stacking_best_model.predict(processed_test_set[0:9]).round(decimals=1))
-#print("Labels:      ", list(test_set_labels[0:9]),'\n')
 class Main(Frame):
     def __init__(self, parent):
         Frame.__init__(self, parent)
@@ -74,10 +71,8 @@ class Main(Frame):
         self.initUI()
     def initUI(self):
         self.parent.title("Cuoi Ky Hoc May")
-  
         menubar = Menu(self.parent)
         self.parent.config(menu=menubar)
-  
         fileMenu = Menu(menubar)
         fileMenu.add_command(label="Predict from file", command=self.predict_it)
         fileMenu.add_separator()
@@ -150,15 +145,15 @@ class Main(Frame):
         global i11
         i11=IntVar()
         c11 = Checkbutton(root, text = "War", variable=i11)
-        c11.grid(row=4, column = 1)
+        c11.grid(row=4, column = 0)
         global i12
         i12=IntVar()
         c12 = Checkbutton(root, text = "Western", variable=i12)
-        c12.grid(row=4, column = 2)
+        c12.grid(row=4, column = 1)
         global i13
         i13=IntVar()
         c13 = Checkbutton(root, text = "Romance", variable=i13)
-        c13.grid(row=4, column = 3)
+        c13.grid(row=4, column = 2)
         global i14
         i14=IntVar()
         c14 = Checkbutton(root, text = "Crime", variable=i14)
@@ -206,7 +201,7 @@ class Main(Frame):
         'Animation':[str(i4.get())],
         'Science Fiction':[(i5.get())],
         'Drama':[str(i6.get())],
-        'Thirller':[(i7.get())],
+        'Thriller':[(i7.get())],
         'Family':[(i8.get())],
         'Comedy':[(i9.get())],
         'History':[(i10.get())],
@@ -219,7 +214,7 @@ class Main(Frame):
         'Documentary':[(i17.get())],
         'Music':[(i18.get())],
         'TV Movie':[(i19.get())],
-        'None':[(i20.get())],
+        None:[(i20.get())],
         'Foreign':[(i21.get())],
         'year':[str(e8.get())]}
         data_panda = pd.DataFrame(data)
@@ -235,8 +230,9 @@ class Main(Frame):
         for i in data :
             mylist.insert(END, str(i)+": "+str(data[i])+"\n")
         full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-        search = joblib.load('saved_objects/StackingRegressor_model.pkl')
-        best_model = search.best_estimator_
+        search = joblib.load('models/StackingRegressor_model.pkl')
+        best_model = search
+        #best_model = search.best_estimator_
         processed_test_set = full_pipeline.transform(data_panda)
         mylist.insert(END,
         "\nPredictions: "+str(best_model.predict(processed_test_set).round(decimals=1))+
@@ -252,8 +248,9 @@ class Main(Frame):
         if fl != '':
             df = pd.read_csv(fl)
             full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-            search = joblib.load('saved_objects/StackingRegressor_model.pkl')
-            best_model = search.best_estimator_
+            search = joblib.load('models/StackingRegressor_model.pkl')
+            #best_model = search.best_estimator_
+            best_model = search
             processed_test_set = full_pipeline.transform(df.astype(str))
             predictions = best_model.predict(processed_test_set)
             x = np.array(range(0, len(predictions)))
@@ -279,5 +276,3 @@ class Main(Frame):
 root = tk.Tk()
 Main(root)
 root.mainloop()
-
-# %%
