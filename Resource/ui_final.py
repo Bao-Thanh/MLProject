@@ -187,7 +187,7 @@ class Main(Frame):
         i21=IntVar()
         c21 = Checkbutton(root, text = "Foreign", variable=i21)
         c21.grid(row=5, column = 5)
-        tk.Button(root,text='Add',command=self.predict_input).grid(row=20, 
+        tk.Button(root,text='Predict',command=self.predict_input).grid(row=20, 
                                    column=0)
         self.txt = Text(self)
     def predict_input(self):
@@ -219,6 +219,7 @@ class Main(Frame):
         'Foreign':[(i21.get())],
         'year':[str(e8.get())]}
         data_panda = pd.DataFrame(data)
+#        data_panda.to_csv("Dataset/test.csv")
         root_fit_train_set2 = Toplevel(root)
         root_fit_train_set2.title("data info")
         scrollbar = Scrollbar(root_fit_train_set2)
@@ -248,6 +249,14 @@ class Main(Frame):
         fl = dlg.show()
         if fl != '':
             df = pd.read_csv(fl)
+            df.columns=['budget' , 'popularity','runtime',
+        'vote_average','vote_count','Action','Adventure',
+        'Fantasy','Animation','Science Fiction','Drama',
+        'Thriller','Family','Comedy','History','War',
+        'Western','Romance','Crime','Mystery',
+        'Horror','Documentary','Music',
+        'TV Movie', None,'Foreign','year'
+            ]
             full_pipeline = joblib.load(r'models/full_pipeline.pkl')
             search = joblib.load('saved_objects/StackingRegressor_model.pkl')
             #best_model = search.best_estimator_
