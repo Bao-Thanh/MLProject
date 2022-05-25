@@ -1,5 +1,6 @@
 '''
 This source code is uploaded on Github at the following link: https://github.com/Bao-Thanh/MLProject 
+
 '''
 #%% 
 # Import các thư viện
@@ -44,6 +45,7 @@ from sklearn.ensemble import BaggingRegressor
 from sklearn.ensemble import VotingRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.ensemble import StackingRegressor
+from uritemplate import expand
 # Import các hàm
 import function as func
 
@@ -54,7 +56,7 @@ import tkinter as tk
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, 
 NavigationToolbar2Tk)
 import math
-
+from tabulate import tabulate
 #%%
 class ColumnSelector(BaseEstimator, TransformerMixin):
     def __init__(self, feature_names):
@@ -75,6 +77,7 @@ class Main(Frame):
         self.parent.config(menu=menubar)
         fileMenu = Menu(menubar)
         fileMenu.add_command(label="Predict from file", command=self.predict_it)
+        fileMenu.add_command(label="See file data",command=self.see_file_data)
         fileMenu.add_separator()
         fileMenu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="File", menu=fileMenu)
@@ -186,21 +189,40 @@ class Main(Frame):
         i21=IntVar()
         c21 = Checkbutton(root, text = "Foreign", variable=i21)
         c21.grid(row=5, column = 5)
-        tk.Button(root,text='Add',command=self.predict_input).grid(row=20, 
+        tk.Button(root,text='Predict',command=self.predict_input).grid(row=20, 
                                    column=0)
         self.txt = Text(self)
+    def see_file_data(self):
+        global fVtypes
+        fVtypes = [('Video', '*.csv')]
+        dlg = Open(self, filetypes = fVtypes)
+        fl = dlg.show()
+        if fl != '':
+            df = pd.read_csv(fl)
+            root_fit_train_set2 = Toplevel(root)
+            root_fit_train_set2.title("data info")
+            scrollbar = Scrollbar(root_fit_train_set2)
+            scrollbar.pack( side = RIGHT, fill = Y )
+            scrollbarX = Scrollbar(root_fit_train_set2,orient="horizontal")
+            scrollbarX.pack( side = BOTTOM, fill = X )
+            mylist = Text(root_fit_train_set2, yscrollcommand = scrollbar.set,
+            xscrollcommand= scrollbarX.set,wrap=NONE)
+            mylist.insert(END,tabulate(df,headers='keys',tablefmt='fancy_grid'))
+            mylist.pack(side = LEFT, fill = BOTH,expand=YES)
+            scrollbar.config( command = mylist.yview )
+            scrollbarX.config(command = mylist.xview)
     def predict_input(self):
-        data = {'budget' : [str(e1.get())], 
-        'popularity':[str(e3.get())],
-        'runtime':[str(e4.get())],
-        'vote_average':[str(e6.get())],
-        'vote_count':[str(e7.get())],
-        'Action':[str(i1.get())],
-        'Adventure':[str(i2.get())],
-        'Fantasy':[str(i3.get())],
-        'Animation':[str(i4.get())],
+        data = {'budget' : [(e1.get())], 
+        'popularity':[(e3.get())],
+        'runtime':[(e4.get())],
+        'vote_average':[(e6.get())],
+        'vote_count':[(e7.get())],
+        'Action':[(i1.get())],
+        'Adventure':[(i2.get())],
+        'Fantasy':[(i3.get())],
+        'Animation':[(i4.get())],
         'Science Fiction':[(i5.get())],
-        'Drama':[str(i6.get())],
+        'Drama':[(i6.get())],
         'Thriller':[(i7.get())],
         'Family':[(i8.get())],
         'Comedy':[(i9.get())],
@@ -218,6 +240,7 @@ class Main(Frame):
         'Foreign':[(i21.get())],
         'year':[str(e8.get())]}
         data_panda = pd.DataFrame(data)
+#        data_panda.to_csv("Dataset/test.csv")
         root_fit_train_set2 = Toplevel(root)
         root_fit_train_set2.title("data info")
         scrollbar = Scrollbar(root_fit_train_set2)
@@ -230,14 +253,14 @@ class Main(Frame):
         for i in data :
             mylist.insert(END, str(i)+": "+str(data[i])+"\n")
         full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-        search = joblib.load('models/StackingRegressor_model.pkl')
+        search = joblib.load('saved_objects/StackingRegressor_model.pkl')
         best_model = search
         #best_model = search.best_estimator_
         processed_test_set = full_pipeline.transform(data_panda)
         mylist.insert(END,
         "\nPredictions: "+str(best_model.predict(processed_test_set).round(decimals=1))+
         "")
-        mylist.pack( side = LEFT, fill = BOTH )
+        mylist.pack( side = LEFT, fill = BOTH, expand=YES)
         scrollbar.config( command = mylist.yview )
         scrollbarX.config(command = mylist.xview)
     def predict_it(self):
@@ -246,33 +269,60 @@ class Main(Frame):
         dlg = Open(self, filetypes = fVtypes)
         fl = dlg.show()
         if fl != '':
-            df = pd.read_csv(fl)
-            full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-            search = joblib.load('models/StackingRegressor_model.pkl')
-            #best_model = search.best_estimator_
-            best_model = search
-            processed_test_set = full_pipeline.transform(df.astype(str))
-            predictions = best_model.predict(processed_test_set)
-            x = np.array(range(0, len(predictions)))
-            y = np.array(predictions)
             root_fit_train_set2 = Toplevel(root)
             root_fit_train_set2.title("data info")
-            fig = Figure(figsize=(12, 6))
-            ax = fig.add_subplot(122)
-            ax.plot(x, y, color = "red", marker = "o",linestyle='')
-            ax.set_xlabel("row")
-            ax.set_title("predicted from file")
-            ax.set_ylabel("predicted value")
-            new_list = range(math.floor(min(x)), math.ceil(max(x))+1)            
-            ax.set_xticks(new_list)
-            canvas = FigureCanvasTkAgg(fig,
-                               master = root_fit_train_set2)  
-            canvas.draw()
-            canvas.get_tk_widget().pack()
-            toolbar = NavigationToolbar2Tk(canvas,
-                                        root_fit_train_set2)
-            toolbar.update()
-            canvas.get_tk_widget().pack()
+            try:
+                df = pd.read_csv(fl)
+                df.columns=['budget' , 'popularity','runtime',
+            'vote_average','vote_count','Action','Adventure',
+            'Fantasy','Animation','Science Fiction','Drama',
+            'Thriller','Family','Comedy','History','War',
+            'Western','Romance','Crime','Mystery',
+            'Horror','Documentary','Music',
+            'TV Movie', None,'Foreign','year'
+                ]
+                full_pipeline = joblib.load(r'models/full_pipeline.pkl')
+                search = joblib.load('saved_objects/StackingRegressor_model.pkl')
+                #best_model = search.best_estimator_
+                best_model = search
+                processed_test_set = full_pipeline.transform(df.astype(str))
+                predictions = best_model.predict(processed_test_set)
+                x = np.array(range(0, len(predictions)))
+                y = np.array(predictions)
+                fig = Figure(figsize=(5, 5))
+                ax = fig.add_subplot(122)
+                ax.plot(x, y, color = "red", marker = "o",linestyle='')
+                ax.set_xlabel("row")
+                ax.set_title("predicted from file")
+                ax.set_ylabel("predicted value")
+                new_list = range(math.floor(min(x)), math.ceil(max(x))+1)            
+                ax.set_xticks(new_list)
+                canvas = FigureCanvasTkAgg(fig,
+                                master = root_fit_train_set2)  
+                canvas.draw()
+                canvas.get_tk_widget().pack(side = TOP,fill=BOTH, expand=1)
+                toolbar = NavigationToolbar2Tk(canvas,
+                                            root_fit_train_set2)
+                toolbar.update()
+                canvas.get_tk_widget().pack(side = TOP,fill=BOTH, expand=1)
+                row_number = 0
+                scrollbar = Scrollbar(root_fit_train_set2)
+                mylist = Text(root_fit_train_set2, yscrollcommand = scrollbar.set,wrap=WORD)
+                scrollbar.pack( side = RIGHT, fill = Y )
+                for i in predictions:
+                    mylist.insert(END,"row "+str(row_number)+" predicted: "+str(i)+"\n")
+                    row_number+=1
+            except:
+                scrollbar = Scrollbar(root_fit_train_set2)
+                mylist = Text(root_fit_train_set2, yscrollcommand = scrollbar.set,wrap=WORD)
+                scrollbar.pack( side = RIGHT, fill = Y )
+                mylist.insert(END,"Please choose file have correct header formart")
+            mylist.pack(side = LEFT, fill = BOTH,expand=YES)
+            scrollbar.config( command = mylist.yview )
+        
+
 root = tk.Tk()
 Main(root)
 root.mainloop()
+
+# %%
