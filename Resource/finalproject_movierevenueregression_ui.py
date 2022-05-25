@@ -253,7 +253,7 @@ class Main(Frame):
         for i in data :
             mylist.insert(END, str(i)+": "+str(data[i])+"\n")
         full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-        search = joblib.load('saved_objects/StackingRegressor_model.pkl')
+        search = joblib.load('models/StackingRegressor_model.pkl')
         best_model = search
         #best_model = search.best_estimator_
         processed_test_set = full_pipeline.transform(data_panda)
@@ -282,7 +282,7 @@ class Main(Frame):
             'TV Movie', None,'Foreign','year'
                 ]
                 full_pipeline = joblib.load(r'models/full_pipeline.pkl')
-                search = joblib.load('saved_objects/StackingRegressor_model.pkl')
+                search = joblib.load('models/StackingRegressor_model.pkl')
                 #best_model = search.best_estimator_
                 best_model = search
                 processed_test_set = full_pipeline.transform(df.astype(str))
