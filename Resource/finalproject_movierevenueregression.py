@@ -172,14 +172,7 @@ class ColumnSelector(BaseEstimator, TransformerMixin):
         return dataframe[self.feature_names].values
 
 num_feat_names = ["year",'budget','popularity', 'runtime', 'vote_average', 'vote_count']
-# cat_feat_names = []
 onehot_feat_names = columns
-
-# cat_pipeline = Pipeline([
-#     ('selector', ColumnSelector(cat_feat_names)),
-#     ('imputer', SimpleImputer(missing_values=np.nan, strategy="constant", fill_value = "NO INFO", copy=True)), # complete missing values. copy=False: imputation will be done in-place 
-#     ('cat_encoder', OneHotEncoder(handle_unknown = "ignore")) 
-#     ]) 
 
 num_pipeline = Pipeline([
     ('selector', ColumnSelector(num_feat_names)),
@@ -194,7 +187,6 @@ onehot_pipeline = Pipeline([
 
 full_pipeline = FeatureUnion(transformer_list=[
     ("num_pipeline", num_pipeline),
-    # ("cat_pipeline", cat_pipeline),
     ("onehot_pipeline", onehot_pipeline)])
 
 # %%
@@ -206,12 +198,8 @@ print('We have {0} numeric feature + {1} one hot features.'.format(len(num_feat_
 joblib.dump(full_pipeline, r'models/full_pipeline.pkl')
 
 # %%
-# onehot_cols = []
-# for val_list in full_pipeline.transformer_list[1][1].named_steps['cat_encoder'].categories_: 
-#     onehot_cols = onehot_cols + val_list.tolist()
+
 columns_header = train_set.columns.tolist()
-# for name in cat_feat_names:
-#     columns_header.remove(name)
 processed_train_set = pd.DataFrame(processed_train_set_val, columns = columns_header)
 print('\n____________ Processed dataframe ____________')
 print(processed_train_set.info())
@@ -236,18 +224,6 @@ def load_model(model_name):
     return model
 
 '''Train'''
-
-# %% 
-print('\n____________ Fine-tune models ____________')
-def print_search_result(grid_search, model_name = ""): 
-    print("\n====== Fine-tune " + model_name +" ======")
-    print('Best hyperparameter combination: ',grid_search.best_params_)
-    print('Best rmse: ', np.sqrt(-grid_search.best_score_))  
-    #print('Best estimator: ', grid_search.best_estimator_) # NOTE: require refit=True in  SearchCV
-    print('Performance of hyperparameter combinations:')
-    cv_results = grid_search.cv_results_
-    for (mean_score, params) in zip(cv_results["mean_test_score"], cv_results["params"]):
-        print('rmse =', np.sqrt(-mean_score).round(decimals=1), params) 
 
 # %%
 full_pipeline = joblib.load(r'models/full_pipeline.pkl')
@@ -343,7 +319,7 @@ model.fit(processed_train_set_val, train_set_labels)
 score = model.score(processed_test_set, test_set_labels)
 scores.append(score)
 
-'''Gradient Boosting Regressorr'''
+'''Gradient Boosting Regressor'''
 # %%
 model = GradientBoostingRegressor(loss='huber',max_depth=4,max_features='log2',n_estimators=200,
                                                        random_state=42)
